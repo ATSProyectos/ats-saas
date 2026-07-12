@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { UploadForm } from "./upload-form";
+import { ConsumoManualForm } from "./manual-form";
 import { AssignSelect } from "./assign-select";
 
 const money = new Intl.NumberFormat("es-CL", {
@@ -57,6 +58,7 @@ export default async function CombustiblePage() {
       </div>
 
       <UploadForm />
+      <ConsumoManualForm />
 
       <div className="flex gap-4 text-sm">
         <span className="rounded-md bg-gray-100 px-3 py-1">
@@ -76,6 +78,7 @@ export default async function CombustiblePage() {
               <th className="whitespace-nowrap px-3 py-2 font-medium">Fecha</th>
               <th className="whitespace-nowrap px-3 py-2 font-medium">Estación</th>
               <th className="whitespace-nowrap px-3 py-2 font-medium">Patente</th>
+              <th className="whitespace-nowrap px-3 py-2 font-medium">Modalidad</th>
               <th className="whitespace-nowrap px-3 py-2 text-right font-medium">Litros</th>
               <th className="whitespace-nowrap px-3 py-2 text-right font-medium">Monto</th>
               <th className="whitespace-nowrap px-3 py-2 text-right font-medium">Odómetro</th>
@@ -85,7 +88,7 @@ export default async function CombustiblePage() {
           <tbody>
             {consumos?.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-4 text-gray-400">
+                <td colSpan={8} className="px-3 py-4 text-gray-400">
                   Aún no hay consumos importados. Sube tu CSV de Copec arriba.
                 </td>
               </tr>
@@ -98,6 +101,17 @@ export default async function CombustiblePage() {
                 <td className="px-3 py-2 text-gray-600">{c.estacion ?? "—"}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-gray-500">
                   {c.patente ?? "—"}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-[11px] ${
+                      c.es_tct
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {c.es_tct ? "TCT" : "Sin TCT"}
+                  </span>
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
                   {c.volumen_litros !== null ? liters.format(c.volumen_litros) : "—"}

@@ -25,15 +25,14 @@ export const ventaSchema = z.object({
   valor_flete: money,
   rigger: money,
   extras: money,
-  // Costos directos del servicio.
+  // Costos directos del servicio. (Petróleo TCT/sin TCT y TAG/peajes NO se
+  // capturan aquí: los alimentan los módulos Combustible y Peajes.)
   variable_operador: money,
   salida_caja: money,
   viaticos_extras: money,
   comision_venta: money,
   pago_terceros: money,
   pago_iva_terceros: money,
-  costos_petroleo: money,
-  tag_peajes: money,
   // Facturación.
   n_cotizacion: optionalText,
   n_factura: optionalText,

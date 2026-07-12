@@ -35,7 +35,9 @@ type VentaFormValues = {
   comision_venta?: number;
   pago_terceros?: number;
   pago_iva_terceros?: number;
-  costos_petroleo?: number;
+  // Solo lectura (los alimentan los módulos Combustible y Peajes).
+  costos_petroleo_tct?: number;
+  costos_petroleo_sin_tct?: number;
   tag_peajes?: number;
   n_cotizacion?: string;
   n_factura?: string;
@@ -56,8 +58,6 @@ const NUM_KEYS = [
   "comision_venta",
   "pago_terceros",
   "pago_iva_terceros",
-  "costos_petroleo",
-  "tag_peajes",
 ] as const;
 
 type NumKey = (typeof NUM_KEYS)[number];
@@ -85,6 +85,11 @@ export function VentaForm({
     setNums((prev) => ({ ...prev, [key]: value }));
   }
 
+  // Valores de solo lectura, gestionados por los módulos Combustible y Peajes.
+  const petroleoTct = initialValues?.costos_petroleo_tct ?? 0;
+  const petroleoSinTct = initialValues?.costos_petroleo_sin_tct ?? 0;
+  const tagPeajes = initialValues?.tag_peajes ?? 0;
+
   // Cálculos en vivo (los definitivos los recalcula la base de datos).
   const ingresoNeto =
     nums.valor_pluma_hora * nums.cantidad_horas +
@@ -100,8 +105,9 @@ export function VentaForm({
     nums.comision_venta +
     nums.pago_terceros +
     nums.pago_iva_terceros +
-    nums.costos_petroleo +
-    nums.tag_peajes;
+    petroleoTct +
+    petroleoSinTct +
+    tagPeajes;
   const margen = ingresoNeto - costosDirectos;
 
   return (
@@ -247,8 +253,9 @@ export function VentaForm({
           <NumberField name="comision_venta" label="Comisión de venta" value={nums.comision_venta} onChange={setNum} />
           <NumberField name="pago_terceros" label="Pago a terceros" value={nums.pago_terceros} onChange={setNum} />
           <NumberField name="pago_iva_terceros" label="IVA a terceros" value={nums.pago_iva_terceros} onChange={setNum} />
-          <NumberField name="costos_petroleo" label="Costos petróleo" value={nums.costos_petroleo} onChange={setNum} hint="Se actualiza al asignar combustible" />
-          <NumberField name="tag_peajes" label="TAG / peajes" value={nums.tag_peajes} onChange={setNum} />
+          <ReadOnlyMoney label="Petróleo TCT" value={petroleoTct} hint="Desde módulo Combustible" />
+          <ReadOnlyMoney label="Petróleo sin TCT" value={petroleoSinTct} hint="Desde módulo Combustible" />
+          <ReadOnlyMoney label="TAG / peajes" value={tagPeajes} hint="Desde módulo Peajes" />
         </div>
       </section>
 
@@ -357,6 +364,28 @@ function NumberField({
         onFocus={(e) => e.target.select()}
         className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm"
       />
+      {hint && <p className="mt-0.5 text-[10px] text-gray-400">{hint}</p>}
+    </div>
+  );
+}
+
+function ReadOnlyMoney({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: number;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-gray-600">
+        {label}
+      </label>
+      <div className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm tabular-nums text-gray-700">
+        {money.format(value)}
+      </div>
       {hint && <p className="mt-0.5 text-[10px] text-gray-400">{hint}</p>}
     </div>
   );

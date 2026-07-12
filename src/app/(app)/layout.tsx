@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { href: "/clientes", label: "Clientes" },
   { href: "/ventas", label: "Ventas" },
   { href: "/combustible", label: "Combustible" },
+  { href: "/peajes", label: "Peajes/TAG" },
 ];
 
 const ROLE_LABELS: Record<string, string> = {
