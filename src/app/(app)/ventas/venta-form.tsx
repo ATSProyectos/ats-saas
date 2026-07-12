@@ -1,10 +1,16 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveVenta, type ActionResult } from "./actions";
 
 const initialState: ActionResult = {};
+
+const money = new Intl.NumberFormat("es-CL", {
+  style: "currency",
+  currency: "CLP",
+  maximumFractionDigits: 0,
+});
 
 type Cliente = { id: string; nombre: string };
 
@@ -18,8 +24,11 @@ type VentaFormValues = {
   destino?: string;
   servicio_tipo?: string;
   descripcion_carga?: string;
-  monto_neto?: number;
-  iva?: number;
+  valor_pluma_hora?: number;
+  cantidad_horas?: number;
+  valor_flete?: number;
+  rigger?: number;
+  extras?: number;
   variable_operador?: number;
   salida_caja?: number;
   viaticos_extras?: number;
@@ -34,32 +43,25 @@ type VentaFormValues = {
   fecha_pago?: string;
 };
 
-function MoneyField({
-  name,
-  label,
-  defaultValue,
-}: {
-  name: string;
-  label: string;
-  defaultValue?: number;
-}) {
-  return (
-    <div>
-      <label htmlFor={name} className="mb-1 block text-xs font-medium text-gray-600">
-        {label}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type="number"
-        min={0}
-        step="1"
-        defaultValue={defaultValue ?? 0}
-        className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm"
-      />
-    </div>
-  );
-}
+// Campos numéricos que participan en los cálculos en vivo.
+const NUM_KEYS = [
+  "valor_pluma_hora",
+  "cantidad_horas",
+  "valor_flete",
+  "rigger",
+  "extras",
+  "variable_operador",
+  "salida_caja",
+  "viaticos_extras",
+  "comision_venta",
+  "pago_terceros",
+  "pago_iva_terceros",
+  "costos_petroleo",
+  "tag_peajes",
+] as const;
+
+type NumKey = (typeof NUM_KEYS)[number];
+type Nums = Record<NumKey, number>;
 
 export function VentaForm({
   clientes,
@@ -72,6 +74,35 @@ export function VentaForm({
 }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(saveVenta, initialState);
+
+  const [nums, setNums] = useState<Nums>(() => {
+    const base = {} as Nums;
+    for (const k of NUM_KEYS) base[k] = initialValues?.[k] ?? 0;
+    return base;
+  });
+
+  function setNum(key: NumKey, value: number) {
+    setNums((prev) => ({ ...prev, [key]: value }));
+  }
+
+  // Cálculos en vivo (los definitivos los recalcula la base de datos).
+  const ingresoNeto =
+    nums.valor_pluma_hora * nums.cantidad_horas +
+    nums.valor_flete +
+    nums.rigger +
+    nums.extras;
+  const iva = Math.round(ingresoNeto * 0.19);
+  const total = ingresoNeto + iva;
+  const costosDirectos =
+    nums.variable_operador +
+    nums.salida_caja +
+    nums.viaticos_extras +
+    nums.comision_venta +
+    nums.pago_terceros +
+    nums.pago_iva_terceros +
+    nums.costos_petroleo +
+    nums.tag_peajes;
+  const margen = ingresoNeto - costosDirectos;
 
   return (
     <form action={formAction} className="flex flex-col gap-6">
@@ -185,9 +216,23 @@ export function VentaForm({
 
       <section className="rounded-lg border border-gray-200 bg-white p-4">
         <h2 className="mb-3 text-sm font-semibold text-gray-700">Ingreso</h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <MoneyField name="monto_neto" label="Monto neto ($) *" defaultValue={initialValues?.monto_neto} />
-          <MoneyField name="iva" label="IVA ($)" defaultValue={initialValues?.iva} />
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+          <NumberField name="valor_pluma_hora" label="Valor pluma ($/h)" value={nums.valor_pluma_hora} onChange={setNum} />
+          <NumberField name="cantidad_horas" label="Horas pluma" value={nums.cantidad_horas} onChange={setNum} step="0.5" />
+          <NumberField name="valor_flete" label="Valor flete ($)" value={nums.valor_flete} onChange={setNum} />
+          <NumberField name="rigger" label="Rigger ($)" value={nums.rigger} onChange={setNum} />
+          <NumberField name="extras" label="Extras ($)" value={nums.extras} onChange={setNum} />
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 rounded-md bg-gray-50 p-3 text-sm sm:grid-cols-4">
+          <Calc label="Monto neto" value={money.format(ingresoNeto)} />
+          <Calc label="IVA (19%)" value={money.format(iva)} />
+          <Calc label="Total" value={money.format(total)} strong />
+          <Calc
+            label="Margen bruto"
+            value={money.format(margen)}
+            tone={margen >= 0 ? "good" : "bad"}
+          />
         </div>
       </section>
 
@@ -196,14 +241,14 @@ export function VentaForm({
           Costos directos del servicio
         </h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <MoneyField name="variable_operador" label="Variable operador" defaultValue={initialValues?.variable_operador} />
-          <MoneyField name="salida_caja" label="Salida de caja" defaultValue={initialValues?.salida_caja} />
-          <MoneyField name="viaticos_extras" label="Viáticos / extras" defaultValue={initialValues?.viaticos_extras} />
-          <MoneyField name="comision_venta" label="Comisión de venta" defaultValue={initialValues?.comision_venta} />
-          <MoneyField name="pago_terceros" label="Pago a terceros" defaultValue={initialValues?.pago_terceros} />
-          <MoneyField name="pago_iva_terceros" label="IVA a terceros" defaultValue={initialValues?.pago_iva_terceros} />
-          <MoneyField name="costos_petroleo" label="Costos petróleo" defaultValue={initialValues?.costos_petroleo} />
-          <MoneyField name="tag_peajes" label="TAG / peajes" defaultValue={initialValues?.tag_peajes} />
+          <NumberField name="variable_operador" label="Variable operador" value={nums.variable_operador} onChange={setNum} />
+          <NumberField name="salida_caja" label="Salida de caja" value={nums.salida_caja} onChange={setNum} />
+          <NumberField name="viaticos_extras" label="Viáticos / extras" value={nums.viaticos_extras} onChange={setNum} />
+          <NumberField name="comision_venta" label="Comisión de venta" value={nums.comision_venta} onChange={setNum} />
+          <NumberField name="pago_terceros" label="Pago a terceros" value={nums.pago_terceros} onChange={setNum} />
+          <NumberField name="pago_iva_terceros" label="IVA a terceros" value={nums.pago_iva_terceros} onChange={setNum} />
+          <NumberField name="costos_petroleo" label="Costos petróleo" value={nums.costos_petroleo} onChange={setNum} hint="Se actualiza al asignar combustible" />
+          <NumberField name="tag_peajes" label="TAG / peajes" value={nums.tag_peajes} onChange={setNum} />
         </div>
       </section>
 
@@ -278,5 +323,68 @@ export function VentaForm({
         </button>
       </div>
     </form>
+  );
+}
+
+function NumberField({
+  name,
+  label,
+  value,
+  onChange,
+  step = "1",
+  hint,
+}: {
+  name: NumKey;
+  label: string;
+  value: number;
+  onChange: (key: NumKey, value: number) => void;
+  step?: string;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <label htmlFor={name} className="mb-1 block text-xs font-medium text-gray-600">
+        {label}
+      </label>
+      <input
+        id={name}
+        name={name}
+        type="number"
+        min={0}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(name, Number(e.target.value) || 0)}
+        onFocus={(e) => e.target.select()}
+        className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+      />
+      {hint && <p className="mt-0.5 text-[10px] text-gray-400">{hint}</p>}
+    </div>
+  );
+}
+
+function Calc({
+  label,
+  value,
+  strong,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+  tone?: "neutral" | "good" | "bad";
+}) {
+  const toneClass =
+    tone === "good"
+      ? "text-[#006300]"
+      : tone === "bad"
+        ? "text-[#d03b3b]"
+        : "text-gray-900";
+  return (
+    <div>
+      <p className="text-[11px] text-gray-500">{label}</p>
+      <p className={`tabular-nums ${strong ? "text-base font-semibold" : "font-medium"} ${toneClass}`}>
+        {value}
+      </p>
+    </div>
   );
 }

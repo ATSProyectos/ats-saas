@@ -18,8 +18,14 @@ export const ventaSchema = z.object({
   servicio_tipo: optionalText,
   descripcion_carga: optionalText,
   comentario: optionalText,
-  monto_neto: money,
-  iva: money,
+  // Componentes del ingreso. El monto neto, IVA y total se calculan solos
+  // en la base de datos a partir de estos valores.
+  valor_pluma_hora: money,
+  cantidad_horas: money,
+  valor_flete: money,
+  rigger: money,
+  extras: money,
+  // Costos directos del servicio.
   variable_operador: money,
   salida_caja: money,
   viaticos_extras: money,
@@ -28,6 +34,7 @@ export const ventaSchema = z.object({
   pago_iva_terceros: money,
   costos_petroleo: money,
   tag_peajes: money,
+  // Facturación.
   n_cotizacion: optionalText,
   n_factura: optionalText,
   fecha_facturacion: optionalText,
