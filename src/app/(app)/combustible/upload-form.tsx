@@ -165,7 +165,8 @@ export function UploadForm() {
         <p className="mt-2 text-sm text-emerald-700">
           {result.inserted} consumo(s) importado(s) de {result.received} leído(s)
           {result.received !== result.inserted &&
-            " (el resto ya existía y se omitió)"}
+            " (el resto ya existía)"}
+          {result.autoAsignados ? ` · ${result.autoAsignados} asignado(s) automáticamente al servicio pluma del día` : ""}
           .
         </p>
       )}

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { UploadForm } from "./upload-form";
 import { ConsumoManualForm } from "./manual-form";
 import { AssignSelect } from "./assign-select";
+import { AutoAssignButton } from "./auto-assign-button";
 
 const money = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -52,15 +53,16 @@ export default async function CombustiblePage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Combustible</h1>
         <p className="text-sm text-gray-500">
-          Consumos de Copec importados. Asigna cada carga al servicio que
-          corresponde: el costo de petróleo del servicio se actualiza solo.
+          Consumos de Copec importados. El camión pluma (HFSX24) es el único
+          vehículo propio al que aplica este costo, así que se asigna solo al
+          servicio pluma de esa fecha; el resto se asigna a mano.
         </p>
       </div>
 
       <UploadForm />
       <ConsumoManualForm />
 
-      <div className="flex gap-4 text-sm">
+      <div className="flex flex-wrap items-center gap-4 text-sm">
         <span className="rounded-md bg-gray-100 px-3 py-1">
           {consumos?.length ?? 0} consumos · {money.format(totalMonto)}
         </span>
@@ -69,6 +71,7 @@ export default async function CombustiblePage() {
             {sinAsignar} sin asignar
           </span>
         )}
+        <AutoAssignButton sinAsignar={sinAsignar} />
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">

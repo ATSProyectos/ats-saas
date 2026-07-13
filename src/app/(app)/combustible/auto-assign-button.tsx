@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { autoAssignPeajesByFecha } from "./actions";
+import { autoAssignConsumosByFecha } from "./actions";
 
 export function AutoAssignButton({ sinAsignar }: { sinAsignar: number }) {
   const router = useRouter();
@@ -12,12 +12,12 @@ export function AutoAssignButton({ sinAsignar }: { sinAsignar: number }) {
   function handleClick() {
     setMessage(null);
     startTransition(async () => {
-      const res = await autoAssignPeajesByFecha();
+      const res = await autoAssignConsumosByFecha();
       if ("error" in res) {
         setMessage(`Error: ${res.error}`);
         return;
       }
-      const partes = [`${res.movimientosAsignados} movimiento(s) asignado(s) automáticamente al servicio pluma (HFSX24) del día`];
+      const partes = [`${res.movimientosAsignados} consumo(s) asignado(s) automáticamente al servicio pluma (HFSX24) del día`];
       if (res.fechasAmbiguas > 0) {
         partes.push(`${res.fechasAmbiguas} fecha(s) con más de un servicio pluma ese día (requieren asignación manual)`);
       }

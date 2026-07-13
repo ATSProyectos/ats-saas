@@ -67,8 +67,11 @@ export type AutoAssignResult = {
 
 /**
  * Asigna automáticamente los movimientos de peajes/TAG sin asignar a un
- * servicio cuando hay EXACTAMENTE un servicio con esa misma fecha de
- * ejecución. Si hay 0 o más de 1 servicio ese día, lo deja para asignación
+ * servicio. El camión pluma HFSX24 es el único vehículo propio de ATS al
+ * que aplican estos costos (el resto de servicios son con otros vehículos
+ * o subcontratados con externos), así que solo se considera como candidato
+ * el servicio con `servicio_tipo` = "Pluma" de esa fecha. Si esa fecha no
+ * tiene ningún servicio pluma, o tiene más de uno, se deja para asignación
  * manual (evita adivinar mal cuando hay ambigüedad).
  */
 export async function autoAssignPeajesByFecha(): Promise<
@@ -95,7 +98,8 @@ export async function autoAssignPeajesByFecha(): Promise<
   const { data: ventas, error: ventasError } = await supabase
     .from("ventas_servicios")
     .select("id, fecha_servicio")
-    .in("fecha_servicio", fechas);
+    .in("fecha_servicio", fechas)
+    .ilike("servicio_tipo", "%pluma%");
   if (ventasError) return { error: ventasError.message };
 
   const ventasPorFecha = new Map<string, string[]>();

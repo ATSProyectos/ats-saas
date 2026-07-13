@@ -22,6 +22,7 @@ export type ImportResult = {
   error?: string;
   inserted?: number;
   received?: number;
+  autoAsignados?: number;
 };
 
 export async function importConsumos(
@@ -55,8 +56,107 @@ export async function importConsumos(
 
   if (error) return { error: error.message };
 
+  // Intenta asignar automáticamente lo recién importado (y cualquier otro
+  // consumo pendiente) al servicio pluma (HFSX24) de esa misma fecha.
+  const autoAssign = await autoAssignConsumosByFecha();
+
   revalidatePath("/combustible");
-  return { inserted: data?.length ?? 0, received: parsed.data.length };
+  return {
+    inserted: data?.length ?? 0,
+    received: parsed.data.length,
+    autoAsignados: "error" in autoAssign ? 0 : autoAssign.movimientosAsignados,
+  };
+}
+
+export type AutoAssignResult = {
+  fechasAsignadas: number;
+  movimientosAsignados: number;
+  fechasAmbiguas: number;
+  fechasSinServicio: number;
+};
+
+/**
+ * Asigna automáticamente los consumos de combustible sin asignar a un
+ * servicio. El camión pluma HFSX24 es el único vehículo propio de ATS al
+ * que aplican estos costos (el resto de servicios son con otros vehículos
+ * o subcontratados con externos), así que solo se considera como candidato
+ * el servicio con `servicio_tipo` = "Pluma" de esa fecha. Si esa fecha no
+ * tiene ningún servicio pluma, o tiene más de uno, se deja para asignación
+ * manual (evita adivinar mal cuando hay ambigüedad). Mismo criterio que
+ * autoAssignPeajesByFecha en el módulo de Peajes.
+ */
+export async function autoAssignConsumosByFecha(): Promise<
+  AutoAssignResult | { error: string }
+> {
+  const supabase = await createClient();
+
+  const { data: pendientes, error: pendError } = await supabase
+    .from("consumos_combustible")
+    .select("id, fecha")
+    .is("venta_servicio_id", null);
+  if (pendError) return { error: pendError.message };
+
+  const empty: AutoAssignResult = {
+    fechasAsignadas: 0,
+    movimientosAsignados: 0,
+    fechasAmbiguas: 0,
+    fechasSinServicio: 0,
+  };
+  if (!pendientes || pendientes.length === 0) return empty;
+
+  const fechas = Array.from(new Set(pendientes.map((p) => p.fecha)));
+
+  const { data: ventas, error: ventasError } = await supabase
+    .from("ventas_servicios")
+    .select("id, fecha_servicio")
+    .in("fecha_servicio", fechas)
+    .ilike("servicio_tipo", "%pluma%");
+  if (ventasError) return { error: ventasError.message };
+
+  const ventasPorFecha = new Map<string, string[]>();
+  for (const v of ventas ?? []) {
+    const list = ventasPorFecha.get(v.fecha_servicio) ?? [];
+    list.push(v.id);
+    ventasPorFecha.set(v.fecha_servicio, list);
+  }
+
+  const resultado = { ...empty };
+  const ventasAfectadas = new Set<string>();
+
+  for (const fecha of fechas) {
+    const candidatos = ventasPorFecha.get(fecha) ?? [];
+    if (candidatos.length === 0) {
+      resultado.fechasSinServicio++;
+      continue;
+    }
+    if (candidatos.length > 1) {
+      resultado.fechasAmbiguas++;
+      continue;
+    }
+
+    const ventaId = candidatos[0];
+    const idsDelDia = pendientes.filter((p) => p.fecha === fecha).map((p) => p.id);
+
+    const { error: updError } = await supabase
+      .from("consumos_combustible")
+      .update({ venta_servicio_id: ventaId })
+      .in("id", idsDelDia);
+    if (updError) return { error: updError.message };
+
+    resultado.fechasAsignadas++;
+    resultado.movimientosAsignados += idsDelDia.length;
+    ventasAfectadas.add(ventaId);
+  }
+
+  for (const ventaId of ventasAfectadas) {
+    await recomputePetroleo(supabase, ventaId);
+  }
+
+  revalidatePath("/combustible");
+  revalidatePath("/ventas");
+  revalidatePath("/dashboard");
+
+  return resultado;
 }
 
 async function recomputePetroleo(
