@@ -18,6 +18,7 @@ export type ImportPeajesResult = {
   error?: string;
   inserted?: number;
   received?: number;
+  autoAsignados?: number;
 };
 
 export async function importPeajes(
@@ -45,8 +46,102 @@ export async function importPeajes(
 
   if (error) return { error: error.message };
 
+  // Intenta asignar automáticamente lo recién importado (y cualquier otro
+  // movimiento pendiente) a servicios cuya fecha coincida exactamente.
+  const autoAssign = await autoAssignPeajesByFecha();
+
   revalidatePath("/peajes");
-  return { inserted: data?.length ?? 0, received: parsed.data.length };
+  return {
+    inserted: data?.length ?? 0,
+    received: parsed.data.length,
+    autoAsignados: "error" in autoAssign ? 0 : autoAssign.movimientosAsignados,
+  };
+}
+
+export type AutoAssignResult = {
+  fechasAsignadas: number;
+  movimientosAsignados: number;
+  fechasAmbiguas: number;
+  fechasSinServicio: number;
+};
+
+/**
+ * Asigna automáticamente los movimientos de peajes/TAG sin asignar a un
+ * servicio cuando hay EXACTAMENTE un servicio con esa misma fecha de
+ * ejecución. Si hay 0 o más de 1 servicio ese día, lo deja para asignación
+ * manual (evita adivinar mal cuando hay ambigüedad).
+ */
+export async function autoAssignPeajesByFecha(): Promise<
+  AutoAssignResult | { error: string }
+> {
+  const supabase = await createClient();
+
+  const { data: pendientes, error: pendError } = await supabase
+    .from("peajes_tag")
+    .select("id, fecha")
+    .is("venta_servicio_id", null);
+  if (pendError) return { error: pendError.message };
+
+  const empty: AutoAssignResult = {
+    fechasAsignadas: 0,
+    movimientosAsignados: 0,
+    fechasAmbiguas: 0,
+    fechasSinServicio: 0,
+  };
+  if (!pendientes || pendientes.length === 0) return empty;
+
+  const fechas = Array.from(new Set(pendientes.map((p) => p.fecha)));
+
+  const { data: ventas, error: ventasError } = await supabase
+    .from("ventas_servicios")
+    .select("id, fecha_servicio")
+    .in("fecha_servicio", fechas);
+  if (ventasError) return { error: ventasError.message };
+
+  const ventasPorFecha = new Map<string, string[]>();
+  for (const v of ventas ?? []) {
+    const list = ventasPorFecha.get(v.fecha_servicio) ?? [];
+    list.push(v.id);
+    ventasPorFecha.set(v.fecha_servicio, list);
+  }
+
+  const resultado = { ...empty };
+  const ventasAfectadas = new Set<string>();
+
+  for (const fecha of fechas) {
+    const candidatos = ventasPorFecha.get(fecha) ?? [];
+    if (candidatos.length === 0) {
+      resultado.fechasSinServicio++;
+      continue;
+    }
+    if (candidatos.length > 1) {
+      resultado.fechasAmbiguas++;
+      continue;
+    }
+
+    const ventaId = candidatos[0];
+    const idsDelDia = pendientes.filter((p) => p.fecha === fecha).map((p) => p.id);
+
+    const { error: updError } = await supabase
+      .from("peajes_tag")
+      .update({ venta_servicio_id: ventaId })
+      .in("id", idsDelDia);
+    if (updError) return { error: updError.message };
+
+    resultado.fechasAsignadas++;
+    resultado.movimientosAsignados += idsDelDia.length;
+    ventasAfectadas.add(ventaId);
+  }
+
+  for (const ventaId of ventasAfectadas) {
+    await recomputeTag(supabase, ventaId);
+  }
+
+  revalidatePath("/peajes");
+  revalidatePath("/ventas");
+  revalidatePath("/dashboard");
+
+  return resultado;
 }
 
 const manualPeajeSchema = z.object({

@@ -62,10 +62,14 @@ export function PeajeCsvUploadForm() {
       setError(res.error);
       return;
     }
-    setResult(
+    const partes = [
       `${res.inserted} movimiento(s) importado(s) de ${res.received} leído(s)` +
-        (res.received !== res.inserted ? " (el resto ya existía y se omitió)." : "."),
-    );
+        (res.received !== res.inserted ? " (el resto ya existía)" : ""),
+    ];
+    if (res.autoAsignados) {
+      partes.push(`${res.autoAsignados} asignado(s) automáticamente a un servicio por coincidir la fecha`);
+    }
+    setResult(partes.join(" · ") + ".");
     setPreview(null);
     router.refresh();
   }
