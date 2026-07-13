@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { PeajeCsvUploadForm } from "./csv-upload-form";
 import { PeajeManualForm } from "./manual-form";
 import { AssignPeajeSelect } from "./assign-select";
 
@@ -47,14 +48,8 @@ export default async function PeajesPage() {
         </p>
       </div>
 
+      <PeajeCsvUploadForm />
       <PeajeManualForm />
-
-      <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
-        <strong>Importación por CSV de concesionarias (próximamente):</strong> en
-        cuanto me compartas un CSV de ejemplo de cada concesionaria que usas
-        (Autopista Central, Costanera Norte, Vespucio, etc.), agrego la carga
-        automática aquí, igual que en Combustible.
-      </div>
 
       <div className="flex gap-4 text-sm">
         <span className="rounded-md bg-gray-100 px-3 py-1">

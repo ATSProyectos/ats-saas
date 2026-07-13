@@ -4,6 +4,51 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
+const peajeRowSchema = z.object({
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  hora: z.string().nullable().optional(),
+  concesionaria: z.string().min(1),
+  patente: z.string().nullable().optional(),
+  descripcion: z.string().nullable().optional(),
+  monto: z.number().positive(),
+  documento: z.string().min(1),
+});
+
+export type ImportPeajesResult = {
+  error?: string;
+  inserted?: number;
+  received?: number;
+};
+
+export async function importPeajes(
+  rows: unknown,
+): Promise<ImportPeajesResult> {
+  const parsed = z.array(peajeRowSchema).safeParse(rows);
+  if (!parsed.success) {
+    return { error: "Los datos no tienen el formato esperado." };
+  }
+  if (parsed.data.length === 0) {
+    return { error: "No hay movimientos para importar." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const payload = parsed.data.map((r) => ({ ...r, created_by: user?.id }));
+
+  const { data, error } = await supabase
+    .from("peajes_tag")
+    .upsert(payload, { onConflict: "concesionaria,documento", ignoreDuplicates: true })
+    .select("id");
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/peajes");
+  return { inserted: data?.length ?? 0, received: parsed.data.length };
+}
+
 const manualPeajeSchema = z.object({
   fecha: z.string().min(1, "La fecha es obligatoria"),
   concesionaria: z.string().trim().max(120).optional(),
