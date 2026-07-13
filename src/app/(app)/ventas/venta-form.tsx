@@ -81,9 +81,26 @@ export function VentaForm({
     return base;
   });
 
+  // IVA a terceros: automático (19% del pago a terceros) por defecto en
+  // servicios nuevos; en servicios existentes se respeta el valor guardado
+  // (no todo tercero cobra IVA, así que no se fuerza el recálculo).
+  const [ivaTercerosAuto, setIvaTercerosAuto] = useState(!initialValues?.id);
+
   function setNum(key: NumKey, value: number) {
     setNums((prev) => ({ ...prev, [key]: value }));
   }
+
+  function toggleIvaTercerosAuto(checked: boolean) {
+    if (!checked) {
+      // Al pasar a manual, deja el valor calculado como punto de partida.
+      setNum("pago_iva_terceros", Math.round(nums.pago_terceros * 0.19));
+    }
+    setIvaTercerosAuto(checked);
+  }
+
+  const pagoIvaTerceros = ivaTercerosAuto
+    ? Math.round(nums.pago_terceros * 0.19)
+    : nums.pago_iva_terceros;
 
   // Valores de solo lectura, gestionados por los módulos Combustible y Peajes.
   const petroleoTct = initialValues?.costos_petroleo_tct ?? 0;
@@ -104,7 +121,7 @@ export function VentaForm({
     nums.viaticos_extras +
     nums.comision_venta +
     nums.pago_terceros +
-    nums.pago_iva_terceros +
+    pagoIvaTerceros +
     petroleoTct +
     petroleoSinTct +
     tagPeajes;
@@ -252,7 +269,38 @@ export function VentaForm({
           <NumberField name="viaticos_extras" label="Viáticos / extras" value={nums.viaticos_extras} onChange={setNum} />
           <NumberField name="comision_venta" label="Comisión de venta" value={nums.comision_venta} onChange={setNum} />
           <NumberField name="pago_terceros" label="Pago a terceros" value={nums.pago_terceros} onChange={setNum} />
-          <NumberField name="pago_iva_terceros" label="IVA a terceros" value={nums.pago_iva_terceros} onChange={setNum} />
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <label htmlFor="pago_iva_terceros" className="text-xs font-medium text-gray-600">
+                IVA a terceros
+              </label>
+              <label className="flex items-center gap-1 text-[10px] text-gray-500">
+                <input
+                  type="checkbox"
+                  checked={ivaTercerosAuto}
+                  onChange={(e) => toggleIvaTercerosAuto(e.target.checked)}
+                  className="h-3 w-3"
+                />
+                Auto (19%)
+              </label>
+            </div>
+            <input
+              id="pago_iva_terceros"
+              name="pago_iva_terceros"
+              type="number"
+              min={0}
+              step="1"
+              value={pagoIvaTerceros}
+              readOnly={ivaTercerosAuto}
+              onChange={(e) => setNum("pago_iva_terceros", Number(e.target.value) || 0)}
+              onFocus={(e) => !ivaTercerosAuto && e.target.select()}
+              className={`w-full rounded-md border px-3 py-1.5 text-sm ${
+                ivaTercerosAuto
+                  ? "border-gray-200 bg-gray-100 text-gray-700"
+                  : "border-gray-300"
+              }`}
+            />
+          </div>
           <ReadOnlyMoney label="Petróleo TCT" value={petroleoTct} hint="Desde módulo Combustible" />
           <ReadOnlyMoney label="Petróleo sin TCT" value={petroleoSinTct} hint="Desde módulo Combustible" />
           <ReadOnlyMoney label="TAG / peajes" value={tagPeajes} hint="Desde módulo Peajes" />
