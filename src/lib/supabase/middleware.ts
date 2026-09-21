@@ -1,7 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
+// Rutas accesibles sin sesión completa (aal2).
+//
+// "/auth/confirm" y "/actualizar-clave" son el flujo de recuperación de
+// contraseña: quien llega ahí todavía no superó el segundo factor. Abrirlas
+// no debilita el MFA porque Supabase exige aal2 para aceptar el cambio de
+// contraseña de una cuenta con factor enrolado, y el propio formulario pide
+// el código TOTP antes de mostrar los campos.
+const PUBLIC_PATHS = ["/login", "/auth/confirm", "/actualizar-clave"];
 
 /**
  * Refresca la sesión de Supabase en cada request y bloquea el acceso a

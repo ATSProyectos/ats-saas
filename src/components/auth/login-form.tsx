@@ -4,9 +4,9 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type Step = "password" | "enroll" | "challenge";
+type Step = "password" | "enroll" | "challenge" | "forgot" | "forgot-sent";
 
-export function LoginForm() {
+export function LoginForm({ enlaceInvalido = false }: { enlaceInvalido?: boolean }) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -14,7 +14,11 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    enlaceInvalido
+      ? "El enlace de recuperación no es válido o ya expiró. Solicita uno nuevo."
+      : null,
+  );
   const [loading, setLoading] = useState(false);
 
   // Datos del enrolamiento MFA en curso.
@@ -99,6 +103,34 @@ export function LoginForm() {
     setLoading(false);
   }
 
+  async function handleForgotSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      email,
+      { redirectTo: `${window.location.origin}/auth/confirm` },
+    );
+
+    setLoading(false);
+
+    if (resetError) {
+      setError(resetError.message);
+      return;
+    }
+
+    // Supabase no revela si el correo existe. Mostramos siempre el mismo
+    // mensaje para no filtrar qué cuentas están registradas.
+    setStep("forgot-sent");
+  }
+
+  function volverALogin() {
+    setError(null);
+    setCode("");
+    setStep("password");
+  }
+
   async function handleEnrollVerify(e: FormEvent) {
     e.preventDefault();
     if (!factorId) return;
@@ -155,6 +187,69 @@ export function LoginForm() {
     }
 
     router.replace("/dashboard");
+  }
+
+  if (step === "forgot") {
+    return (
+      <form onSubmit={handleForgotSubmit} className="flex flex-col gap-4">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold">Recuperar contraseña</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Te enviaremos un enlace para definir una nueva contraseña.
+          </p>
+        </div>
+        <div>
+          <label htmlFor="reset-email" className="mb-1 block text-sm font-medium">
+            Correo
+          </label>
+          <input
+            id="reset-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoFocus
+            className="w-full rounded-md border border-gray-300 px-3 py-2"
+          />
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="rounded-md bg-black px-4 py-2 text-white disabled:opacity-50"
+        >
+          {loading ? "Enviando..." : "Enviar enlace"}
+        </button>
+        <button
+          type="button"
+          onClick={volverALogin}
+          className="text-sm text-gray-500 underline"
+        >
+          Volver
+        </button>
+      </form>
+    );
+  }
+
+  if (step === "forgot-sent") {
+    return (
+      <div className="flex flex-col gap-4 text-center">
+        <h2 className="text-lg font-semibold">Revisa tu correo</h2>
+        <p className="text-sm text-gray-500">
+          Si <span className="font-medium">{email}</span> corresponde a una
+          cuenta registrada, recibirás un enlace para definir una nueva
+          contraseña. Revisa también la carpeta de spam.
+        </p>
+        <button
+          type="button"
+          onClick={volverALogin}
+          className="rounded-md bg-black px-4 py-2 text-sm text-white"
+        >
+          Volver al inicio de sesión
+        </button>
+      </div>
+    );
   }
 
   if (step === "enroll") {
@@ -271,6 +366,17 @@ export function LoginForm() {
         className="rounded-md bg-black px-4 py-2 text-white disabled:opacity-50"
       >
         {loading ? "Ingresando..." : "Ingresar"}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setError(null);
+          setPassword("");
+          setStep("forgot");
+        }}
+        className="text-sm text-gray-500 underline"
+      >
+        ¿Olvidaste tu contraseña?
       </button>
     </form>
   );
