@@ -23,9 +23,13 @@ genera la app autenticadora sin conexión.
 
 > **App en uso: Google Authenticator.**
 
-La entrada aparece con el identificador del proyecto Supabase, **no** con el
-nombre "ATS", porque el enrolamiento no define `issuer` ni `friendlyName`
-(ver `src/components/auth/login-form.tsx`).
+Los enrolamientos nuevos aparecen como **"ATS Gestión"** en la app
+autenticadora (el `issuer` se define en `src/components/auth/login-form.tsx`).
+
+> Los factores enrolados **antes** de ese cambio siguen mostrándose con el
+> identificador del proyecto Supabase. El nombre se fija al escanear el QR y
+> no se puede renombrar desde el servidor: para corregirlo hay que reenrolar
+> el factor (ver abajo).
 
 Si el código sale inválido, revisar primero la hora automática del teléfono:
 el TOTP depende del reloj.
@@ -65,9 +69,11 @@ Para crear un usuario a mano: Authentication → Users → Add user, marcando
 En plan Free, el proyecto **se pausa tras ~7 días sin actividad**. Estando
 pausado la API queda apagada y la app no puede autenticar a nadie.
 
-Síntoma engañoso: el login muestra "Correo o contraseña incorrectos" aunque
-la contraseña sea correcta, porque el formulario traduce cualquier fallo a
-ese mismo mensaje.
+Síntoma: el login avisa que no se pudo conectar con el servidor y sugiere
+revisar si el proyecto está pausado. Los mensajes de error de autenticación
+se traducen en `src/lib/auth/auth-error-message.ts`, que distingue el fallo
+de red de la credencial inválida; antes todo caía en "Correo o contraseña
+incorrectos" y el síntoma apuntaba al lado equivocado.
 
 Para reactivarlo: Supabase → el proyecto → **Restore project** (tarda entre 2
 y 10 minutos). La URL y las API keys no cambian, así que no hay que tocar

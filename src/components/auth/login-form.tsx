@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { mensajeDeErrorAuth } from "@/lib/auth/auth-error-message";
 
 type Step = "password" | "enroll" | "challenge" | "forgot" | "forgot-sent";
 
@@ -43,7 +44,7 @@ export function LoginForm({ enlaceInvalido = false }: { enlaceInvalido?: boolean
     const { data, error: aalError } =
       await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     if (aalError) {
-      setError(aalError.message);
+      setError(mensajeDeErrorAuth(aalError));
       return;
     }
 
@@ -57,7 +58,7 @@ export function LoginForm({ enlaceInvalido = false }: { enlaceInvalido?: boolean
       const { data: factors, error: factorsError } =
         await supabase.auth.mfa.listFactors();
       if (factorsError) {
-        setError(factorsError.message);
+        setError(mensajeDeErrorAuth(factorsError));
         return;
       }
       const totp = factors.totp[0];
@@ -72,9 +73,14 @@ export function LoginForm({ enlaceInvalido = false }: { enlaceInvalido?: boolean
 
     // Sin factor MFA registrado todavía: obligar a enrolarse.
     const { data: enrollData, error: enrollError } =
-      await supabase.auth.mfa.enroll({ factorType: "totp" });
+      await supabase.auth.mfa.enroll({
+        factorType: "totp",
+        // Sin issuer, la entrada aparece en Google Authenticator con el id
+        // del proyecto Supabase y es imposible reconocerla.
+        issuer: "ATS Gestión",
+      });
     if (enrollError) {
-      setError(enrollError.message);
+      setError(mensajeDeErrorAuth(enrollError));
       return;
     }
     setFactorId(enrollData.id);
@@ -94,7 +100,7 @@ export function LoginForm({ enlaceInvalido = false }: { enlaceInvalido?: boolean
     });
 
     if (signInError) {
-      setError("Correo o contraseña incorrectos.");
+      setError(mensajeDeErrorAuth(signInError));
       setLoading(false);
       return;
     }
@@ -116,7 +122,7 @@ export function LoginForm({ enlaceInvalido = false }: { enlaceInvalido?: boolean
     setLoading(false);
 
     if (resetError) {
-      setError(resetError.message);
+      setError(mensajeDeErrorAuth(resetError));
       return;
     }
 
@@ -140,7 +146,7 @@ export function LoginForm({ enlaceInvalido = false }: { enlaceInvalido?: boolean
     const { data: challenge, error: challengeError } =
       await supabase.auth.mfa.challenge({ factorId });
     if (challengeError) {
-      setError(challengeError.message);
+      setError(mensajeDeErrorAuth(challengeError));
       setLoading(false);
       return;
     }
@@ -152,7 +158,7 @@ export function LoginForm({ enlaceInvalido = false }: { enlaceInvalido?: boolean
     });
 
     if (verifyError) {
-      setError("Código incorrecto. Verifica la hora de tu teléfono e intenta de nuevo.");
+      setError(mensajeDeErrorAuth(verifyError));
       setLoading(false);
       return;
     }
@@ -169,7 +175,7 @@ export function LoginForm({ enlaceInvalido = false }: { enlaceInvalido?: boolean
     const { data: challenge, error: challengeError } =
       await supabase.auth.mfa.challenge({ factorId });
     if (challengeError) {
-      setError(challengeError.message);
+      setError(mensajeDeErrorAuth(challengeError));
       setLoading(false);
       return;
     }
@@ -181,7 +187,7 @@ export function LoginForm({ enlaceInvalido = false }: { enlaceInvalido?: boolean
     });
 
     if (verifyError) {
-      setError("Código incorrecto. Intenta de nuevo.");
+      setError(mensajeDeErrorAuth(verifyError));
       setLoading(false);
       return;
     }

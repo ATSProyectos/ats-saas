@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { mensajeDeErrorAuth } from "@/lib/auth/auth-error-message";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -39,7 +40,7 @@ export function UpdatePasswordForm() {
         await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
       if (aalError) {
-        setError(aalError.message);
+        setError(mensajeDeErrorAuth(aalError));
         setStep("password");
         return;
       }
@@ -49,7 +50,7 @@ export function UpdatePasswordForm() {
           await supabase.auth.mfa.listFactors();
 
         if (factorsError) {
-          setError(factorsError.message);
+          setError(mensajeDeErrorAuth(factorsError));
           setStep("expirado");
           return;
         }
@@ -82,7 +83,7 @@ export function UpdatePasswordForm() {
     const { data: challenge, error: challengeError } =
       await supabase.auth.mfa.challenge({ factorId });
     if (challengeError) {
-      setError(challengeError.message);
+      setError(mensajeDeErrorAuth(challengeError));
       setLoading(false);
       return;
     }
@@ -94,7 +95,7 @@ export function UpdatePasswordForm() {
     });
 
     if (verifyError) {
-      setError("Código incorrecto. Intenta de nuevo.");
+      setError(mensajeDeErrorAuth(verifyError));
       setLoading(false);
       return;
     }
@@ -121,7 +122,7 @@ export function UpdatePasswordForm() {
     const { error: updateError } = await supabase.auth.updateUser({ password });
 
     if (updateError) {
-      setError(updateError.message);
+      setError(mensajeDeErrorAuth(updateError));
       setLoading(false);
       return;
     }
