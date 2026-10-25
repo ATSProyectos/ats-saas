@@ -144,6 +144,7 @@ export async function autoAssignPeajesByFecha(): Promise<
   revalidatePath("/peajes");
   revalidatePath("/ventas");
   revalidatePath("/dashboard");
+  revalidatePath("/eerr");
 
   return resultado;
 }
@@ -226,5 +227,6 @@ export async function assignPeaje(
   revalidatePath("/peajes");
   revalidatePath("/ventas");
   revalidatePath("/dashboard");
+  revalidatePath("/eerr");
   return {};
 }

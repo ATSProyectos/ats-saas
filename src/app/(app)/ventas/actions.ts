@@ -79,5 +79,6 @@ export async function saveVenta(
 
   revalidatePath("/ventas");
   revalidatePath("/dashboard");
+  revalidatePath("/eerr");
   redirect("/ventas");
 }
