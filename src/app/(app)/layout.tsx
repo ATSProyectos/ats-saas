@@ -8,6 +8,8 @@ const NAV_ITEMS = [
   { href: "/ventas", label: "Ventas" },
   { href: "/combustible", label: "Combustible" },
   { href: "/peajes", label: "Peajes/TAG" },
+  { href: "/gastos", label: "Gastos" },
+  { href: "/eerr", label: "Resultados" },
 ];
 
 const ROLE_LABELS: Record<string, string> = {

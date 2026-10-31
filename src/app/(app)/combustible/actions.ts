@@ -155,6 +155,7 @@ export async function autoAssignConsumosByFecha(): Promise<
   revalidatePath("/combustible");
   revalidatePath("/ventas");
   revalidatePath("/dashboard");
+  revalidatePath("/eerr");
 
   return resultado;
 }
@@ -247,5 +248,6 @@ export async function assignConsumo(
   revalidatePath("/combustible");
   revalidatePath("/ventas");
   revalidatePath("/dashboard");
+  revalidatePath("/eerr");
   return {};
 }
