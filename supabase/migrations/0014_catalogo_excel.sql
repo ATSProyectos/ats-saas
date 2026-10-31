@@ -7,30 +7,82 @@
 -- on delete cascade, así que borrar y recrear dejaría el EERR sin clasificar.
 --
 -- Requiere 0012 aplicada (eerr_lineas / eerr_mapeo).
--- Re-ejecutable: los UPDATE no encuentran nada en la segunda pasada y los
--- INSERT llevan on conflict do nothing.
+-- Re-ejecutable: cada UPDATE se salta a si mismo si el nombre destino ya
+-- existe (si no, re-sembrar 0004 resucitaria los nombres viejos y el rename
+-- chocaria contra la restriccion unica), y los INSERT van con do nothing.
 -- ============================================================================
 
 -- --- 1) Categorías: misma idea, la escritura del Excel ----------------------
-update public.categorias_costo set categoria = 'Servicios_Externos' where categoria = 'Servicios Externos';
-update public.categorias_costo set categoria = 'Uniformes_EPP' where categoria = 'Uniformes y EPP';
-update public.categorias_costo set categoria = 'Otros_Operacionales' where categoria = 'Otros Operacionales';
-update public.categorias_costo set categoria = 'Otros_Administrativos' where categoria = 'Otros Administrativos';
-update public.categorias_costo set categoria = 'Gastos_Bancarios' where categoria = 'Gastos Bancarios';
-update public.categorias_costo set categoria = 'Publicidad_Marketing' where categoria = 'Publicidad y Marketing';
-update public.categorias_costo set categoria = 'Sueldos' where categoria = 'Sueldos Operativos';
-update public.categorias_costo set categoria = 'Peajes_Circulación' where categoria = 'TAG y Peajes';
+update public.categorias_costo c set categoria = 'Servicios_Externos'
+ where c.categoria = 'Servicios Externos'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Servicios_Externos' and d.subcategoria = c.subcategoria);
+update public.categorias_costo c set categoria = 'Uniformes_EPP'
+ where c.categoria = 'Uniformes y EPP'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Uniformes_EPP' and d.subcategoria = c.subcategoria);
+update public.categorias_costo c set categoria = 'Otros_Operacionales'
+ where c.categoria = 'Otros Operacionales'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Otros_Operacionales' and d.subcategoria = c.subcategoria);
+update public.categorias_costo c set categoria = 'Otros_Administrativos'
+ where c.categoria = 'Otros Administrativos'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Otros_Administrativos' and d.subcategoria = c.subcategoria);
+update public.categorias_costo c set categoria = 'Gastos_Bancarios'
+ where c.categoria = 'Gastos Bancarios'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Gastos_Bancarios' and d.subcategoria = c.subcategoria);
+update public.categorias_costo c set categoria = 'Publicidad_Marketing'
+ where c.categoria = 'Publicidad y Marketing'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Publicidad_Marketing' and d.subcategoria = c.subcategoria);
+update public.categorias_costo c set categoria = 'Sueldos'
+ where c.categoria = 'Sueldos Operativos'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Sueldos' and d.subcategoria = c.subcategoria);
+update public.categorias_costo c set categoria = 'Peajes_Circulación'
+ where c.categoria = 'TAG y Peajes'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Peajes_Circulación' and d.subcategoria = c.subcategoria);
 
 -- --- 2) Subcategorías: guiones bajos y tildes como en el Excel --------------
-update public.categorias_costo set subcategoria = 'Seguro_vehículos' where categoria = 'Seguros' and subcategoria = 'Seguro vehículos';
-update public.categorias_costo set subcategoria = 'Mantenciones_de_cuenta' where categoria = 'Gastos_Bancarios' and subcategoria = 'Mantenciones de cuenta';
-update public.categorias_costo set subcategoria = 'Autopistas_urbanas' where categoria = 'Peajes_Circulación' and subcategoria = 'Autopistas urbanas';
-update public.categorias_costo set subcategoria = 'Gastos_menores' where categoria = 'Otros_Administrativos' and subcategoria = 'Gastos menores';
-update public.categorias_costo set subcategoria = 'Pago_IVA' where categoria = 'Otros_Administrativos' and subcategoria = 'Pago IVA';
-update public.categorias_costo set subcategoria = 'Supervisión_técnica' where categoria = 'Servicios_Externos' and subcategoria = 'Supervisión técnica';
-update public.categorias_costo set subcategoria = 'Rutas_interurbanas' where categoria = 'Peajes_Circulación' and subcategoria = 'Rutas interurbanas';
-update public.categorias_costo set subcategoria = 'Ropa_de_trabajo' where categoria = 'Uniformes_EPP' and subcategoria = 'Ropa de trabajo';
-update public.categorias_costo set subcategoria = 'Cursos_licencias' where categoria = 'Capacitación' and subcategoria = 'Cursos y licencias';
+update public.categorias_costo c set subcategoria = 'Seguro_vehículos'
+ where c.categoria = 'Seguros' and c.subcategoria = 'Seguro vehículos'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Seguros' and d.subcategoria = 'Seguro_vehículos');
+update public.categorias_costo c set subcategoria = 'Mantenciones_de_cuenta'
+ where c.categoria = 'Gastos_Bancarios' and c.subcategoria = 'Mantenciones de cuenta'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Gastos_Bancarios' and d.subcategoria = 'Mantenciones_de_cuenta');
+update public.categorias_costo c set subcategoria = 'Autopistas_urbanas'
+ where c.categoria = 'Peajes_Circulación' and c.subcategoria = 'Autopistas urbanas'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Peajes_Circulación' and d.subcategoria = 'Autopistas_urbanas');
+update public.categorias_costo c set subcategoria = 'Gastos_menores'
+ where c.categoria = 'Otros_Administrativos' and c.subcategoria = 'Gastos menores'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Otros_Administrativos' and d.subcategoria = 'Gastos_menores');
+update public.categorias_costo c set subcategoria = 'Pago_IVA'
+ where c.categoria = 'Otros_Administrativos' and c.subcategoria = 'Pago IVA'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Otros_Administrativos' and d.subcategoria = 'Pago_IVA');
+update public.categorias_costo c set subcategoria = 'Supervisión_técnica'
+ where c.categoria = 'Servicios_Externos' and c.subcategoria = 'Supervisión técnica'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Servicios_Externos' and d.subcategoria = 'Supervisión_técnica');
+update public.categorias_costo c set subcategoria = 'Rutas_interurbanas'
+ where c.categoria = 'Peajes_Circulación' and c.subcategoria = 'Rutas interurbanas'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Peajes_Circulación' and d.subcategoria = 'Rutas_interurbanas');
+update public.categorias_costo c set subcategoria = 'Ropa_de_trabajo'
+ where c.categoria = 'Uniformes_EPP' and c.subcategoria = 'Ropa de trabajo'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Uniformes_EPP' and d.subcategoria = 'Ropa_de_trabajo');
+update public.categorias_costo c set subcategoria = 'Cursos_licencias'
+ where c.categoria = 'Capacitación' and c.subcategoria = 'Cursos y licencias'
+   and not exists (select 1 from public.categorias_costo d
+                    where d.categoria = 'Capacitación' and d.subcategoria = 'Cursos_licencias');
 
 -- --- 3) Combinaciones que el Excel usa y el catálogo no tenía ---------------
 insert into public.categorias_costo (categoria, subcategoria) values
