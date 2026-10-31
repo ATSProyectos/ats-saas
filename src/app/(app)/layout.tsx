@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/combustible", label: "Combustible" },
   { href: "/peajes", label: "Peajes/TAG" },
   { href: "/gastos", label: "Gastos" },
+  { href: "/cartola", label: "Cartola" },
   { href: "/eerr", label: "Resultados" },
 ];
 
