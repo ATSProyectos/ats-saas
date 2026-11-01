@@ -9,9 +9,11 @@ const initialState: ActionResult = {};
 export function ClienteEditForm({
   id,
   nombre,
+  diasPago,
 }: {
   id: string;
   nombre: string;
+  diasPago: number | null;
 }) {
   const router = useRouter();
   const boundAction = updateCliente.bind(null, id);
@@ -37,6 +39,24 @@ export function ClienteEditForm({
           required
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
         />
+      </div>
+      <div>
+        <label htmlFor="dias_pago" className="mb-1 block text-sm font-medium">
+          Plazo de pago (días)
+        </label>
+        <input
+          id="dias_pago"
+          name="dias_pago"
+          type="number"
+          min={0}
+          max={365}
+          defaultValue={diasPago ?? ""}
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+        />
+        <p className="mt-1 text-xs text-gray-400">
+          Días entre facturación y pago. En blanco, la fecha estimada de cada
+          venta se digita a mano.
+        </p>
       </div>
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       <div className="flex gap-2">

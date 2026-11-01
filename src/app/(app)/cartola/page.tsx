@@ -22,7 +22,8 @@ type MovimientoFila = {
 export default async function CartolaPage() {
   const supabase = await createClient();
 
-  const [{ data: movimientos }, { data: reglas }, { data: categorias }] = await Promise.all([
+  const [{ data: movimientos }, { data: reglas }, { data: categorias }, { data: duplicados }] =
+    await Promise.all([
     supabase
       .from("cartola_movimientos")
       .select("id, fecha, glosa, monto, tipo, rut, estado")
@@ -35,11 +36,30 @@ export default async function CartolaPage() {
       .select("id, categoria, subcategoria")
       .order("categoria")
       .order("subcategoria"),
+    supabase
+      .from("v_cartola_posible_duplicado")
+      .select("movimiento_id, razon_social, tipo_dte, folio, monto_total"),
   ]);
 
   const filas = (movimientos ?? []) as MovimientoFila[];
   const catalogo = (reglas ?? []) as Regla[];
   const opciones = (categorias ?? []) as Categoria[];
+
+  // Un cargo que calza con una factura ya registrada es el PAGO de ese gasto,
+  // no un gasto nuevo. Registrarlo lo contaría dos veces.
+  const avisoDuplicado = new Map<string, string>();
+  for (const d of (duplicados ?? []) as {
+    movimiento_id: string;
+    razon_social: string | null;
+    tipo_dte: number;
+    folio: number;
+    monto_total: number;
+  }[]) {
+    avisoDuplicado.set(
+      d.movimiento_id,
+      `Ya registrado como ${d.razon_social ?? "documento"} folio ${d.folio}`,
+    );
+  }
 
   // Solo los cargos pendientes piden decisión: un abono es un ingreso y se
   // registra desde Ventas, no como gasto.
@@ -54,6 +74,7 @@ export default async function CartolaPage() {
       rut: m.rut,
       regla: buscarRegla(m, catalogo),
       patronSugerido: patronSugerido(m),
+      posibleDuplicado: avisoDuplicado.get(m.id) ?? null,
     }));
 
   const conRegla = pendientes.filter((m) => m.regla !== null).length;

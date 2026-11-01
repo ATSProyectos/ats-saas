@@ -58,6 +58,7 @@ export default async function EditarVentaPage({
           n_cotizacion: venta.n_cotizacion ?? undefined,
           n_factura: venta.n_factura ?? undefined,
           fecha_facturacion: venta.fecha_facturacion ?? undefined,
+          fecha_estimada_pago: venta.fecha_estimada_pago ?? undefined,
           fecha_pago: venta.fecha_pago ?? undefined,
         }}
       />

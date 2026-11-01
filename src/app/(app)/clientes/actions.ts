@@ -10,7 +10,10 @@ export async function createCliente(
   _prev: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
-  const parsed = clienteSchema.safeParse({ nombre: formData.get("nombre") });
+  const parsed = clienteSchema.safeParse({
+    nombre: formData.get("nombre"),
+    dias_pago: formData.get("dias_pago"),
+  });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
@@ -33,7 +36,10 @@ export async function updateCliente(
   _prev: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
-  const parsed = clienteSchema.safeParse({ nombre: formData.get("nombre") });
+  const parsed = clienteSchema.safeParse({
+    nombre: formData.get("nombre"),
+    dias_pago: formData.get("dias_pago"),
+  });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }

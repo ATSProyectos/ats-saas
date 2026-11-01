@@ -152,19 +152,49 @@ function PagoFields({ prefijo }: { prefijo: string }) {
         </select>
       </div>
       <div>
-        <label htmlFor={`${prefijo}_facturado_ats`} className={labelClass}>
+        <label htmlFor={`${prefijo}_facturacion_ats`} className={labelClass}>
           Factura a nombre de ATS
         </label>
         <select
-          id={`${prefijo}_facturado_ats`}
-          name="facturado_ats"
+          id={`${prefijo}_facturacion_ats`}
+          name="facturacion_ats"
           className={inputClass}
-          defaultValue=""
+          defaultValue="por_definir"
         >
-          <option value="">—</option>
-          <option value="Sí">Sí</option>
-          <option value="No">No</option>
+          <option value="facturado">Sí, a ATS Proyectos</option>
+          <option value="no_facturado">No, sin factura a la empresa</option>
+          <option value="ats_cargo">Facturado a ATS Cargo</option>
+          <option value="por_definir">Por definir</option>
         </select>
+      </div>
+      <div>
+        <label htmlFor={`${prefijo}_estado_pago`} className={labelClass}>
+          Estado de pago
+        </label>
+        <select
+          id={`${prefijo}_estado_pago`}
+          name="estado_pago"
+          className={inputClass}
+          defaultValue="cerrado"
+        >
+          <option value="cerrado">Facturado y pagado (cerrado)</option>
+          <option value="por_pagar">Facturado sin pagar (por pagar)</option>
+          <option value="comprometido">Sin facturar ni pagar (futuro)</option>
+        </select>
+      </div>
+      <div>
+        <label htmlFor={`${prefijo}_fecha_estimada_pago`} className={labelClass}>
+          Fecha estimada de pago
+        </label>
+        <input
+          type="date"
+          id={`${prefijo}_fecha_estimada_pago`}
+          name="fecha_estimada_pago"
+          className={inputClass}
+        />
+        <p className="mt-0.5 text-xs text-gray-400">
+          Obligatoria si queda por pagar: alimenta el calendario de pagos.
+        </p>
       </div>
       <div>
         <label htmlFor={`${prefijo}_tipo_costo`} className={labelClass}>

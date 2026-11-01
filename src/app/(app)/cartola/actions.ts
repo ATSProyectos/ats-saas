@@ -95,6 +95,11 @@ export async function registrarComoGasto(input: RegistrarInput): Promise<Resulta
     monto_neto: neto,
     iva,
     medio_pago: "Cartola Santander",
+    // Un cargo en la cartola ya salió de la cuenta: el gasto nace pagado.
+    // Si tiene factura a nombre de ATS no se sabe desde el banco, así que
+    // queda por definir en vez de asumirse.
+    estado_pago: "cerrado" as const,
+    fecha_pago: mov.fecha,
     created_by: user?.id,
   };
 

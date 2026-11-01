@@ -30,6 +30,20 @@ export function ClienteCreateForm() {
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
         />
       </div>
+      <div className="w-40">
+        <label htmlFor="dias_pago" className="mb-1 block text-sm font-medium">
+          Plazo de pago
+        </label>
+        <input
+          id="dias_pago"
+          name="dias_pago"
+          type="number"
+          min={0}
+          max={365}
+          placeholder="días"
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+        />
+      </div>
       <button
         type="submit"
         disabled={pending}

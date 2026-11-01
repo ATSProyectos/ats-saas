@@ -37,6 +37,9 @@ export const ventaSchema = z.object({
   n_cotizacion: optionalText,
   n_factura: optionalText,
   fecha_facturacion: optionalText,
+  // Si se deja vacía, un trigger la calcula como fecha_facturacion + el plazo
+  // del cliente. Digitarla aquí gana: un acuerdo puntual no se pisa.
+  fecha_estimada_pago: optionalText,
   fecha_pago: optionalText,
 });
 

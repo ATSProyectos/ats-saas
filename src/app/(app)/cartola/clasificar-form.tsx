@@ -22,6 +22,9 @@ export type MovimientoPendiente = {
   rut: string | null;
   regla: Regla | null;
   patronSugerido: string;
+  // Cuando el cargo calza con una factura ya registrada, es su pago y no un
+  // gasto nuevo: registrarlo contaría el mismo costo dos veces.
+  posibleDuplicado: string | null;
 };
 
 export function ClasificarForm({
@@ -92,6 +95,11 @@ export function ClasificarForm({
           )}
         </td>
         <td className="px-3 py-2">
+          {movimiento.posibleDuplicado && (
+            <div className="mb-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-800">
+              Posible pago de factura ya registrada · {movimiento.posibleDuplicado}
+            </div>
+          )}
           {regla ? (
             <div>
               <span className="rounded bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-800">
