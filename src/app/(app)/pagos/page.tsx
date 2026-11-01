@@ -37,6 +37,17 @@ type Cobro = {
   mes_cobro: string | null;
 };
 
+type Cuota = {
+  id: string;
+  nombre: string;
+  numero: number;
+  cuotas_totales: number;
+  fecha_vencimiento: string;
+  monto: number;
+  vencida: boolean | null;
+  mes_pago: string;
+};
+
 const ETIQUETA_ESTADO: Record<string, string> = {
   por_pagar: "Por pagar",
   comprometido: "Comprometido",
@@ -45,7 +56,7 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 export default async function PagosPage() {
   const supabase = await createClient();
 
-  const [{ data }, { data: cobros }] = await Promise.all([
+  const [{ data }, { data: cobros }, { data: cuotasData }] = await Promise.all([
     supabase
       .from("v_calendario_pagos")
       .select(
@@ -58,14 +69,31 @@ export default async function PagosPage() {
         "id, cliente, n_factura, fecha_facturacion, fecha_estimada_pago, monto, vencido, dias_restantes, mes_cobro",
       )
       .order("fecha_estimada_pago", { ascending: true, nullsFirst: false }),
+    supabase
+      .from("v_cuotas_pendientes")
+      .select("id, nombre, numero, cuotas_totales, fecha_vencimiento, monto, vencida, mes_pago")
+      .order("fecha_vencimiento", { ascending: true }),
   ]);
 
   const compromisos = (data ?? []) as Compromiso[];
   const cobranza = (cobros ?? []) as Cobro[];
+  const cuotas = (cuotasData ?? []) as Cuota[];
 
   const porCobrar = cobranza.reduce((a, c) => a + Number(c.monto), 0);
   const cobroVencido = cobranza
     .filter((c) => c.vencido)
+    .reduce((a, c) => a + Number(c.monto), 0);
+
+  // Las cuotas son salida de caja pero no gasto: la amortización de capital va
+  // contra deuda, no contra resultado. Por eso suman al flujo y no al EERR.
+  const deudaCuotas = cuotas.reduce((a, c) => a + Number(c.monto), 0);
+  const cuotasProximas = cuotas.slice(0, 6);
+  const cuotasEn12Meses = cuotas
+    .filter((c) => {
+      const limite = new Date();
+      limite.setFullYear(limite.getFullYear() + 1);
+      return new Date(`${c.fecha_vencimiento}T00:00:00`) <= limite;
+    })
     .reduce((a, c) => a + Number(c.monto), 0);
 
   const vencidos = compromisos.filter((c) => c.vencido);
@@ -112,9 +140,9 @@ export default async function PagosPage() {
         />
         <Tarjeta
           label="Saldo proyectado"
-          valor={money.format(porCobrar - total)}
-          detalle={porCobrar >= total ? "la cobranza cubre los pagos" : "falta cobertura"}
-          alerta={porCobrar < total}
+          valor={money.format(porCobrar - total - cuotasEn12Meses)}
+          detalle="cobranza menos gastos y cuotas a 12 meses"
+          alerta={porCobrar - total - cuotasEn12Meses < 0}
         />
         <Tarjeta
           label="Vencido"
@@ -178,6 +206,58 @@ export default async function PagosPage() {
           </div>
         )}
       </div>
+
+      {cuotas.length > 0 && (
+        <div className="rounded-lg border border-gray-200 bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-4 py-3">
+            <h2 className="text-sm font-semibold text-gray-700">
+              Cuotas de financiamiento
+            </h2>
+            <span className="text-xs text-gray-500">
+              {cuotas.length} cuotas por {money.format(deudaCuotas)} ·{" "}
+              {money.format(cuotasEn12Meses)} en los próximos 12 meses
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+                <tr>
+                  <th className="px-3 py-2">Vencimiento</th>
+                  <th className="px-3 py-2">Crédito</th>
+                  <th className="px-3 py-2">Cuota</th>
+                  <th className="px-3 py-2 text-right">Monto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cuotasProximas.map((c) => (
+                  <tr key={c.id} className="border-t border-gray-100">
+                    <td className="whitespace-nowrap px-3 py-2">
+                      {c.fecha_vencimiento}
+                      {c.vencida && (
+                        <span className="ml-2 rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-700">
+                          vencida
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">{c.nombre}</td>
+                    <td className="px-3 py-2 text-xs text-gray-500">
+                      {c.numero} de {c.cuotas_totales}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right">
+                      {money.format(Number(c.monto))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="border-t border-gray-100 px-3 py-2 text-xs text-gray-500">
+            Las cuotas salen de la caja pero no son gasto: la amortización de
+            capital va contra la deuda, no contra el resultado. Por eso suman
+            acá y no en el estado de resultados.
+          </p>
+        </div>
+      )}
 
       <h2 className="text-sm font-semibold text-gray-700">
         Compromisos de pago por mes
