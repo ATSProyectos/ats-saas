@@ -42,6 +42,7 @@ type VentaFormValues = {
   n_cotizacion?: string;
   n_factura?: string;
   fecha_facturacion?: string;
+  fecha_estimada_pago?: string;
   fecha_pago?: string;
 };
 
@@ -355,6 +356,24 @@ export function VentaForm({
               defaultValue={initialValues?.fecha_pago}
               className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm"
             />
+          </div>
+          <div>
+            <label
+              htmlFor="fecha_estimada_pago"
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              Fecha estimada de pago
+            </label>
+            <input
+              id="fecha_estimada_pago"
+              name="fecha_estimada_pago"
+              type="date"
+              defaultValue={initialValues?.fecha_estimada_pago}
+              className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+            />
+            <p className="mt-0.5 text-xs text-gray-400">
+              Si la dejas vacía se calcula con el plazo del cliente.
+            </p>
           </div>
         </div>
       </section>

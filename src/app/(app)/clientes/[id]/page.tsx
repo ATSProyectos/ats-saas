@@ -11,7 +11,7 @@ export default async function ClienteEditPage({
   const supabase = await createClient();
   const { data: cliente } = await supabase
     .from("clientes")
-    .select("id, nombre")
+    .select("id, nombre, dias_pago")
     .eq("id", id)
     .single();
 
@@ -20,7 +20,11 @@ export default async function ClienteEditPage({
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Editar cliente</h1>
-      <ClienteEditForm id={cliente.id} nombre={cliente.nombre} />
+      <ClienteEditForm
+        id={cliente.id}
+        nombre={cliente.nombre}
+        diasPago={cliente.dias_pago ?? null}
+      />
     </div>
   );
 }
