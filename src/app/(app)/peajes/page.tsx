@@ -3,6 +3,7 @@ import { PeajeCsvUploadForm } from "./csv-upload-form";
 import { PeajeManualForm } from "./manual-form";
 import { AssignPeajeSelect } from "./assign-select";
 import { AutoAssignButton } from "./auto-assign-button";
+import { Concesionarias } from "./concesionarias";
 
 const money = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -57,6 +58,7 @@ export default async function PeajesPage() {
       </div>
 
       <PeajeCsvUploadForm />
+      <Concesionarias />
       <PeajeManualForm />
 
       <div className="flex flex-wrap items-center gap-4 text-sm">
