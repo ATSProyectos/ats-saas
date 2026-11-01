@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/gastos", label: "Gastos" },
   { href: "/facturas", label: "Facturas" },
   { href: "/cartola", label: "Cartola" },
+  { href: "/pagos", label: "Pagos" },
   { href: "/eerr", label: "Resultados" },
 ];
 

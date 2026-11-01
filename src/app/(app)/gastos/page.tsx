@@ -86,13 +86,21 @@ export default async function GastosPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Gastos</h1>
-        <p className="text-sm text-gray-500">
-          Costos que no se cargan a un servicio puntual. Alimentan los niveles 3
-          y 4 del estado de resultados. Montos netos: el IVA es crédito, no
-          costo.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Gastos</h1>
+          <p className="text-sm text-gray-500">
+            Costos que no se cargan a un servicio puntual. Alimentan los niveles 3
+            y 4 del estado de resultados. Montos netos: el IVA es crédito, no
+            costo.
+          </p>
+        </div>
+        <a
+          href="/gastos/no-facturados"
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm hover:border-gray-400"
+        >
+          Planilla para contabilidad ↓
+        </a>
       </div>
 
       <GastoOperacionalForm categorias={(categorias ?? []) as CategoriaEerr[]} />

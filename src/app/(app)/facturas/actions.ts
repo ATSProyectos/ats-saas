@@ -82,11 +82,24 @@ export async function registrarDocumento(input: RegistrarInput): Promise<Resulta
   // El XML ya trae neto e IVA exactos: no hay que desagregar nada. El signo
   // deja la nota de crédito como gasto negativo, que es lo que rebaja el mes.
   const signo = Number(doc.signo);
+
+  // Plazo por defecto hasta que se confirme el real. El calendario de pagos lo
+  // exige: un compromiso sin fecha no aparece y se pierde de vista.
+  const vencimiento = new Date(`${doc.fecha_emision}T00:00:00Z`);
+  vencimiento.setUTCDate(vencimiento.getUTCDate() + 30);
+
   const comun = {
     fecha: doc.fecha_emision,
     categoria_costo_id: input.categoriaCostoId,
     monto_neto: signo * (Number(doc.monto_neto) + Number(doc.monto_exento)),
     iva: signo * Number(doc.iva),
+    // El XML ya probó que la factura va dirigida a ATS Proyectos: el parser
+    // rechaza las que apuntan a otro receptor.
+    facturacion_ats: "facturado" as const,
+    // Existir la factura no significa estar pagada. Nace como cuenta por
+    // pagar; el cruce con la cartola es lo que después la cierra.
+    estado_pago: "por_pagar" as const,
+    fecha_estimada_pago: vencimiento.toISOString().slice(0, 10),
     created_by: user?.id,
   };
   const descripcion = [doc.detalle, `Folio ${doc.folio}`].filter(Boolean).join(" · ");
